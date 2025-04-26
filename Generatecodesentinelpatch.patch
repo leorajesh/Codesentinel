@@ -1,0 +1,90 @@
+diff --git a/generate_codesentinel.py b/generate_codesentinel.py
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/generate_codesentinel.py
+@@ -0,0 +1,1234 @@
++import os
++
++# Project structure
++# Each service, script, YAML, and doc is defined here
++
++project_structure = {
++    "CodeSentinel": {
++        "batch-processor-service": {
++            "go.mod": """module batch-processor-service
++
++go 1.20
++
++require (
++    github.com/google/uuid v1.3.0
++    github.com/labstack/echo/v4 v4.10.2
++)""",
+            "main.go": """package main
++
++import (
++    "net/http"
++    "sync"
++    "github.com/google/uuid"
++    "github.com/labstack/echo/v4"
++)
++
++var (
++    tasks = make(map[string]string)
++    mutex = &sync.Mutex{}
++)
++
++func createTask(c echo.Context) error {
++    id := uuid.New().String()
++    mutex.Lock()
++    tasks[id] = "pending"
++    mutex.Unlock()
++    return c.JSON(http.StatusOK, map[string]string{
++        "task_id": id,
++        "status":  "pending",
++    })
++}
++
++func getTaskStatus(c echo.Context) error {
++    id := c.Param("id")
++    mutex.Lock()
++    status, exists := tasks[id]
++    mutex.Unlock()
++    if !exists {
++        return c.JSON(http.StatusNotFound, map[string]string{"error": "Task not found"})
++    }
++    return c.JSON(http.StatusOK, map[string]string{
++        "task_id": id,
++        "status":  status,
++    })
++}
++
++func main() {
++    e := echo.New()
++    e.POST("/task", createTask)
++    e.GET("/task/:id", getTaskStatus)
++    e.Logger.Fatal(e.Start(":8081"))
++}
++"""
+        },
+        ...
+        (continues for Rust, Python, Next.js, YAMLs, Helm chart, scripts, .gitignore, dockerignore, README)
+        ...
++}
++
++
++def create_project(base_path, structure):
++    for name, content in structure.items():
++        path = os.path.join(base_path, name)
++        if isinstance(content, dict):
++            os.makedirs(path, exist_ok=True)
++            create_project(path, content)
++        else:
++            os.makedirs(os.path.dirname(path), exist_ok=True)
++            with open(path, "w") as f:
++                f.write(content)
++
++
++if __name__ == "__main__":
++    create_project(".", project_structure)
++    print("✅ CodeSentinel project generated successfully!")
